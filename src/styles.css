@@ -70,19 +70,24 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.185 0.02 260);
 
-  --primary: oklch(0.554 0.212 262);            /* #2563EB */
+  --primary: oklch(0.554 0.212 262);
+  /* #2563EB */
   --primary-foreground: oklch(0.99 0.005 250);
   --secondary: oklch(0.962 0.008 250);
   --secondary-foreground: oklch(0.24 0.03 260);
   --muted: oklch(0.955 0.01 250);
   --muted-foreground: oklch(0.52 0.02 258);
-  --accent: oklch(0.746 0.13 210);               /* #06B6D4 */
+  --accent: oklch(0.746 0.13 210);
+  /* #06B6D4 */
   --accent-foreground: oklch(0.12 0.02 240);
-  --destructive: oklch(0.628 0.245 27);          /* #EF4444 */
+  --destructive: oklch(0.628 0.245 27);
+  /* #EF4444 */
   --destructive-foreground: oklch(0.99 0.005 250);
-  --success: oklch(0.71 0.19 149);               /* #22C55E */
+  --success: oklch(0.71 0.19 149);
+  /* #22C55E */
   --success-foreground: oklch(0.12 0.02 150);
-  --warning: oklch(0.752 0.164 65);              /* #F59E0B */
+  --warning: oklch(0.752 0.164 65);
+  /* #F59E0B */
   --warning-foreground: oklch(0.15 0.02 60);
 
   --border: oklch(0.92 0.012 250);
@@ -104,16 +109,12 @@
   --sidebar-border: oklch(0.92 0.012 250);
   --sidebar-ring: oklch(0.554 0.212 262);
 
-  --gradient-hero: radial-gradient(
-      ellipse at 20% 0%,
+  --gradient-hero: radial-gradient(ellipse at 20% 0%,
       color-mix(in oklab, var(--primary) 22%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse at 85% 15%,
+      transparent 55%),
+    radial-gradient(ellipse at 85% 15%,
       color-mix(in oklab, var(--accent) 20%, transparent),
-      transparent 60%
-    ),
+      transparent 60%),
     linear-gradient(180deg, var(--background) 0%, color-mix(in oklab, var(--background) 90%, var(--primary) 4%) 100%);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   --shadow-elegant: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -8px color-mix(in oklab, var(--primary) 22%, transparent);
@@ -166,16 +167,12 @@
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.62 0.212 262);
 
-  --gradient-hero: radial-gradient(
-      ellipse at 20% 0%,
+  --gradient-hero: radial-gradient(ellipse at 20% 0%,
       color-mix(in oklab, var(--primary) 28%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse at 80% 20%,
+      transparent 55%),
+    radial-gradient(ellipse at 80% 20%,
       color-mix(in oklab, var(--accent) 22%, transparent),
-      transparent 60%
-    ),
+      transparent 60%),
     linear-gradient(180deg, var(--background) 0%, oklch(0.1 0.008 260) 100%);
   --shadow-elegant: 0 1px 2px oklch(0 0 0 / 0.4), 0 12px 32px -8px color-mix(in oklab, var(--primary) 35%, transparent);
   --shadow-glow: 0 0 48px -8px color-mix(in oklab, var(--primary) 55%, transparent);
@@ -188,11 +185,13 @@
   * {
     border-color: var(--color-border);
   }
+
   html,
   body,
   #root {
     height: 100%;
   }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -201,7 +200,11 @@
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-  h1, h2, h3, h4 {
+
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
@@ -236,6 +239,7 @@
 
 @utility no-scrollbar {
   scrollbar-width: none;
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -250,13 +254,16 @@
   overflow: hidden;
   box-shadow: var(--shadow-elegant) !important;
 }
+
 .maplibregl-ctrl-group button {
   background: transparent !important;
   color: var(--color-foreground) !important;
 }
-.maplibregl-ctrl-group button + button {
+
+.maplibregl-ctrl-group button+button {
   border-top: 1px solid var(--glass-border) !important;
 }
+
 .maplibregl-ctrl-attrib {
   background: color-mix(in oklab, var(--card) 60%, transparent) !important;
   color: var(--color-muted-foreground) !important;
@@ -264,9 +271,11 @@
   border-radius: 8px 0 0 0 !important;
   font-size: 10px !important;
 }
+
 .maplibregl-ctrl-attrib a {
   color: var(--color-muted-foreground) !important;
 }
+
 .maplibregl-popup-content {
   background: var(--glass-bg) !important;
   color: var(--color-foreground) !important;
@@ -277,6 +286,7 @@
   box-shadow: var(--shadow-elegant);
   font-family: var(--font-sans);
 }
+
 .maplibregl-popup-tip {
   display: none !important;
 }
