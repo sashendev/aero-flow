@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { Search, Plane, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Plane, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Aircraft } from "@/types/aircraft";
 import { flagEmoji } from "@/lib/country-flags";
 import { cn } from "@/lib/utils";
+import type { Aircraft } from "@/types/aircraft";
 
 interface Props {
   aircraft: Aircraft[];
-  onSelect: (a: Aircraft) => void;
+  onSelect: (aircraft: Aircraft) => void;
 }
 
 export function SearchBar({ aircraft, onSelect }: Props) {
@@ -19,41 +19,40 @@ export function SearchBar({ aircraft, onSelect }: Props) {
     const query = q.trim().toLowerCase();
     if (!query) return [];
     return aircraft
-      .filter((a) => {
-        const cs = (a.callsign ?? "").toLowerCase();
+      .filter((aircraft) => {
+        const callsign = (aircraft.callsign ?? "").toLowerCase();
         return (
-          a.icao24.toLowerCase().includes(query) ||
-          cs.includes(query) ||
-          a.originCountry.toLowerCase().includes(query)
+          aircraft.icao24.toLowerCase().includes(query) ||
+          callsign.includes(query) ||
+          aircraft.originCountry.toLowerCase().includes(query)
         );
       })
-      .slice(0, 8);
+      .slice(0, 9);
   }, [q, aircraft]);
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative w-full max-w-lg">
       <div
         className={cn(
-          "flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all",
-          "bg-surface-container border border-outline-variant/50",
-          focused && "border-secondary ring-1 ring-secondary/50 shadow-none",
+          "radar-panel flex h-11 items-center gap-2 rounded-lg px-3 transition",
+          focused && "border-yellow-300/50 shadow-[0_0_0_1px_rgba(250,204,21,.28)]",
         )}
       >
-        <Search className="h-5 w-5 text-on-surface-variant shrink-0" />
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <Input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(event) => setQ(event.target.value)}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 150)}
-          placeholder="Search Callsign, Airline, Fix..."
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-8 px-0 text-sm text-on-surface placeholder:text-on-surface-variant/70"
+          onBlur={() => setTimeout(() => setFocused(false), 140)}
+          placeholder="Search flight, hex, or country"
+          className="h-9 border-0 bg-transparent px-0 text-sm shadow-none placeholder:text-muted-foreground/80 focus-visible:ring-0 focus-visible:ring-offset-0"
           aria-label="Search flights"
         />
         {q && (
           <button
             onClick={() => setQ("")}
             aria-label="Clear search"
-            className="rounded-md p-1 text-on-surface-variant hover:text-on-surface transition-colors"
+            className="rounded-md p-1 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -67,39 +66,37 @@ export function SearchBar({ aircraft, onSelect }: Props) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="glass-panel absolute z-40 mt-2 w-full overflow-hidden rounded-xl"
+            className="radar-panel absolute z-40 mt-2 w-full overflow-hidden rounded-lg"
             role="listbox"
           >
             {results.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground text-center">
-                No flights match “{q}”.
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No flights match "{q}".
               </div>
             ) : (
               <ul className="max-h-80 overflow-y-auto no-scrollbar">
-                {results.map((a) => (
-                  <li key={a.icao24}>
+                {results.map((aircraft) => (
+                  <li key={aircraft.icao24}>
                     <button
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        onSelect(a);
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        onSelect(aircraft);
                         setQ("");
                       }}
-                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition"
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-white/10"
                     >
-                      <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-yellow-300/15 text-yellow-200">
                         <Plane className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">
-                          {a.callsign || a.icao24.toUpperCase()}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          <span aria-hidden className="mr-1">
-                            {flagEmoji(a.originCountry)}
-                          </span>
-                          {a.originCountry} · {a.icao24.toUpperCase()}
-                        </div>
-                      </div>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {(aircraft.callsign || aircraft.icao24).trim().toUpperCase()}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {flagEmoji(aircraft.originCountry)} {aircraft.originCountry} /{" "}
+                          {aircraft.icao24.toUpperCase()}
+                        </span>
+                      </span>
                     </button>
                   </li>
                 ))}

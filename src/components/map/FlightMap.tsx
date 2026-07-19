@@ -1,97 +1,143 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import maplibregl, {
-  Map as MLMap,
-  Popup,
-  NavigationControl,
-  ScaleControl,
   FullscreenControl,
   GeolocateControl,
+  Map as MLMap,
+  NavigationControl,
+  Popup,
+  ScaleControl,
+  type StyleSpecification,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 import type { Aircraft } from "@/types/aircraft";
 import type { FlightRoute } from "@/lib/airlabs-route.server";
-import type { StyleSpecification } from "maplibre-gl";
-import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 
-
-// Free raster styles (OSM + Carto tiles). No API key required.
 const OSM_ATTRIB =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
+const AIRPORTS = [
+  { code: "LHR", name: "London Heathrow", lng: -0.4543, lat: 51.47 },
+  { code: "CDG", name: "Paris Charles de Gaulle", lng: 2.55, lat: 49.0097 },
+  { code: "FRA", name: "Frankfurt", lng: 8.5706, lat: 50.0333 },
+  { code: "AMS", name: "Amsterdam Schiphol", lng: 4.7639, lat: 52.3086 },
+  { code: "DXB", name: "Dubai", lng: 55.3644, lat: 25.2532 },
+  { code: "DOH", name: "Doha Hamad", lng: 51.6138, lat: 25.2731 },
+  { code: "SIN", name: "Singapore Changi", lng: 103.994, lat: 1.3644 },
+  { code: "HND", name: "Tokyo Haneda", lng: 139.7798, lat: 35.5494 },
+  { code: "JFK", name: "New York JFK", lng: -73.7781, lat: 40.6413 },
+  { code: "LAX", name: "Los Angeles", lng: -118.4085, lat: 33.9416 },
+  { code: "ORD", name: "Chicago O'Hare", lng: -87.9073, lat: 41.9742 },
+  { code: "ATL", name: "Atlanta", lng: -84.4277, lat: 33.6407 },
+  { code: "YYZ", name: "Toronto Pearson", lng: -79.6248, lat: 43.6777 },
+  { code: "GRU", name: "Sao Paulo Guarulhos", lng: -46.4731, lat: -23.4356 },
+  { code: "SYD", name: "Sydney", lng: 151.1772, lat: -33.9399 },
+  { code: "CMB", name: "Colombo Bandaranaike", lng: 79.8841, lat: 7.1808 },
+];
+
+const SRC = "aircraft-src";
+const LAYER = "aircraft-layer";
+const HALO_LAYER = "aircraft-halo-layer";
+const LABEL_LAYER = "aircraft-label-layer";
+const ROUTE_SRC = "route-src";
+const ROUTE_GLOW = "route-glow-layer";
+const ROUTE_PAST = "route-past-layer";
+const ROUTE_FUTURE = "route-future-layer";
+const ENDPOINT_SRC = "route-endpoints-src";
+const ENDPOINT_LAYER = "route-endpoint-layer";
+const ENDPOINT_LABEL = "route-endpoint-label-layer";
+const AIRPORT_SRC = "airport-src";
+const AIRPORT_LAYER = "airport-layer";
+const AIRPORT_LABEL = "airport-label-layer";
+const TRAIL_SRC = "trail-src";
+const TRAIL_LAYER = "trail-layer";
+
+interface Props {
+  aircraft: Aircraft[];
+  mapStyle: "dark" | "light";
+  markerSize: number;
+  selectedIcao: string | null;
+  onSelect: (icao24: string) => void;
+  onViewportChange: (
+    bbox: [number, number, number, number],
+    center: { lng: number; lat: number },
+    zoom: number,
+  ) => void;
+  focusIcao: string | null;
+  route: FlightRoute | null;
+  animations?: boolean;
+}
+
 function rasterStyle(variant: "dark" | "light"): StyleSpecification {
-  const url =
+  const tiles =
     variant === "dark"
-      ? "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-      : "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png";
+      ? ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"]
+      : ["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"];
   return {
     version: 8,
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources: {
-      basemap: {
-        type: "raster",
-        tiles: [url],
-        tileSize: 256,
-        attribution: OSM_ATTRIB,
-      },
+      basemap: { type: "raster", tiles, tileSize: 256, attribution: OSM_ATTRIB },
     },
     layers: [
-      { id: "bg", type: "background", paint: { "background-color": variant === "dark" ? "#0b0b12" : "#eef2f6" } },
-      { id: "basemap", type: "raster", source: "basemap" },
+      {
+        id: "bg",
+        type: "background",
+        paint: { "background-color": variant === "dark" ? "#070b12" : "#eef4f7" },
+      },
+      {
+        id: "basemap",
+        type: "raster",
+        source: "basemap",
+        paint: {
+          "raster-saturation": variant === "dark" ? -0.35 : -0.15,
+          "raster-contrast": variant === "dark" ? 0.15 : 0.04,
+          "raster-brightness-min": variant === "dark" ? 0.08 : 0.02,
+          "raster-brightness-max": variant === "dark" ? 0.74 : 1,
+        },
+      },
     ],
   };
 }
 
-// Draw a small plane icon on a canvas so we can register it as a map image.
-function makePlaneImage(color: string, size = 44, isLight = false): ImageData {
+function makePlaneImage(color: string, size = 54): ImageData {
   const c = document.createElement("canvas");
   c.width = size;
   c.height = size;
   const g = c.getContext("2d")!;
-  const s = size;
-  // Soft shadow disk for readability on tiles.
-  g.fillStyle = isLight ? "rgba(0,0,0,0.1)" : "rgba(0,0,0,0.25)";
-  g.beginPath();
-  g.arc(s / 2, s / 2, s * 0.38, 0, Math.PI * 2);
-  g.fill();
-  // Plane silhouette, pointing up (north). MapLibre applies icon-rotate.
-  g.translate(s / 2, s / 2);
+  const k = size / 54;
+
+  g.translate(size / 2, size / 2);
+  g.shadowColor = "rgba(0,0,0,.34)";
+  g.shadowBlur = 5;
   g.fillStyle = color;
-  g.strokeStyle = isLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.9)";
-  g.lineWidth = 1.4;
-  const k = s / 44;
+  g.strokeStyle = "rgba(255,255,255,.86)";
+  g.lineWidth = 1.2;
   g.beginPath();
-  g.moveTo(0, -16 * k);
-  g.lineTo(3 * k, -4 * k);
-  g.lineTo(18 * k, 4 * k);
-  g.lineTo(18 * k, 8 * k);
-  g.lineTo(3 * k, 6 * k);
-  g.lineTo(3 * k, 12 * k);
-  g.lineTo(7 * k, 15 * k);
-  g.lineTo(7 * k, 17 * k);
-  g.lineTo(0, 15 * k);
-  g.lineTo(-7 * k, 17 * k);
-  g.lineTo(-7 * k, 15 * k);
-  g.lineTo(-3 * k, 12 * k);
-  g.lineTo(-3 * k, 6 * k);
-  g.lineTo(-18 * k, 8 * k);
-  g.lineTo(-18 * k, 4 * k);
-  g.lineTo(-3 * k, -4 * k);
+  g.moveTo(0, -21 * k);
+  g.lineTo(4.2 * k, -5 * k);
+  g.lineTo(21 * k, 5 * k);
+  g.lineTo(21 * k, 10 * k);
+  g.lineTo(4 * k, 8 * k);
+  g.lineTo(3 * k, 15 * k);
+  g.lineTo(9 * k, 19 * k);
+  g.lineTo(9 * k, 22 * k);
+  g.lineTo(0, 18 * k);
+  g.lineTo(-9 * k, 22 * k);
+  g.lineTo(-9 * k, 19 * k);
+  g.lineTo(-3 * k, 15 * k);
+  g.lineTo(-4 * k, 8 * k);
+  g.lineTo(-21 * k, 10 * k);
+  g.lineTo(-21 * k, 5 * k);
+  g.lineTo(-4.2 * k, -5 * k);
   g.closePath();
   g.fill();
+  g.shadowBlur = 0;
   g.stroke();
   return g.getImageData(0, 0, size, size);
 }
 
-// GeoJSON namespace alias (avoids namespace lookups in signatures).
-
-const ICONS: Record<string, string> = {
-  "plane-primary": "#2563EB",
-  "plane-success": "#22C55E",
-  "plane-accent": "#06B6D4",
-  "plane-warning": "#F59E0B",
-};
-
-function aircraftToFeatures(list: Aircraft[]): FeatureCollection {
+function aircraftToFeatures(list: Aircraft[]): FeatureCollection<Point> {
   return {
     type: "FeatureCollection",
     features: list
@@ -102,242 +148,337 @@ function aircraftToFeatures(list: Aircraft[]): FeatureCollection {
         geometry: { type: "Point", coordinates: [a.longitude!, a.latitude!] },
         properties: {
           icao24: a.icao24,
-          callsign: a.callsign ?? "",
+          callsign: (a.callsign || a.icao24).trim().toUpperCase(),
           country: a.originCountry,
           heading: a.heading ?? 0,
           onGround: a.onGround,
           verticalRate: a.verticalRate ?? 0,
+          speed: a.velocity ?? 0,
+          altitude: a.baroAltitude ?? 0,
         },
       })),
   };
 }
 
-// Great-circle interpolation between two lng/lat points (returns N+1 points).
-function greatCircle(
-  a: [number, number],
-  b: [number, number],
-  n = 64,
-): [number, number][] {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const toDeg = (r: number) => (r * 180) / Math.PI;
+function airportFeatures(): FeatureCollection<Point> {
+  return {
+    type: "FeatureCollection",
+    features: AIRPORTS.map((airport) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [airport.lng, airport.lat] },
+      properties: airport,
+    })),
+  };
+}
+
+function toRad(v: number) {
+  return (v * Math.PI) / 180;
+}
+
+function toDeg(v: number) {
+  return (v * 180) / Math.PI;
+}
+
+function greatCircle(a: [number, number], b: [number, number], n = 96): [number, number][] {
   const [lng1, lat1] = a;
   const [lng2, lat2] = b;
-  const φ1 = toRad(lat1);
-  const φ2 = toRad(lat2);
-  const λ1 = toRad(lng1);
-  const λ2 = toRad(lng2);
+  const p1 = toRad(lat1);
+  const p2 = toRad(lat2);
+  const l1 = toRad(lng1);
+  const l2 = toRad(lng2);
   const d =
     2 *
     Math.asin(
       Math.sqrt(
-        Math.sin((φ2 - φ1) / 2) ** 2 +
-          Math.cos(φ1) * Math.cos(φ2) * Math.sin((λ2 - λ1) / 2) ** 2,
+        Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin((l2 - l1) / 2) ** 2,
       ),
     );
   if (!Number.isFinite(d) || d === 0) return [a, b];
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= n; i++) {
+  return Array.from({ length: n + 1 }, (_, i) => {
     const f = i / n;
     const A = Math.sin((1 - f) * d) / Math.sin(d);
     const B = Math.sin(f * d) / Math.sin(d);
-    const x = A * Math.cos(φ1) * Math.cos(λ1) + B * Math.cos(φ2) * Math.cos(λ2);
-    const y = A * Math.cos(φ1) * Math.sin(λ1) + B * Math.cos(φ2) * Math.sin(λ2);
-    const z = A * Math.sin(φ1) + B * Math.sin(φ2);
-    const φ = Math.atan2(z, Math.sqrt(x * x + y * y));
-    const λ = Math.atan2(y, x);
-    pts.push([toDeg(λ), toDeg(φ)]);
-  }
-  return pts;
+    const x = A * Math.cos(p1) * Math.cos(l1) + B * Math.cos(p2) * Math.cos(l2);
+    const y = A * Math.cos(p1) * Math.sin(l1) + B * Math.cos(p2) * Math.sin(l2);
+    const z = A * Math.sin(p1) + B * Math.sin(p2);
+    return [toDeg(Math.atan2(y, x)), toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)))];
+  });
 }
 
-// Split polyline at anti-meridian so MapLibre doesn't draw across the globe.
-function splitAtDateline(pts: [number, number][]): [number, number][][] {
-  const segs: [number, number][][] = [];
-  let cur: [number, number][] = [];
-  for (let i = 0; i < pts.length; i++) {
-    if (i === 0) {
-      cur.push(pts[i]);
-      continue;
+function splitAtDateline(points: [number, number][]) {
+  const segments: [number, number][][] = [];
+  let current: [number, number][] = [];
+  points.forEach((point, index) => {
+    if (index > 0 && Math.abs(point[0] - points[index - 1][0]) > 180) {
+      if (current.length > 1) segments.push(current);
+      current = [];
     }
-    const prev = pts[i - 1];
-    const p = pts[i];
-    if (Math.abs(p[0] - prev[0]) > 180) {
-      segs.push(cur);
-      cur = [p];
-    } else {
-      cur.push(p);
-    }
-  }
-  if (cur.length > 1) segs.push(cur);
-  return segs.filter((s) => s.length > 1);
+    current.push(point);
+  });
+  if (current.length > 1) segments.push(current);
+  return segments;
 }
 
 function routeToFeatures(
   route: FlightRoute | null,
   current: [number, number] | null,
-): FeatureCollection {
-  if (!route) return { type: "FeatureCollection", features: [] };
+): FeatureCollection<LineString> {
   const features: Feature<LineString>[] = [];
-  const push = (
-    a: [number, number] | null | undefined,
-    b: [number, number] | null | undefined,
-    kind: "past" | "future",
-  ) => {
+  if (!route) return { type: "FeatureCollection", features };
+  const dep = route.dep ? ([route.dep.lng, route.dep.lat] as [number, number]) : null;
+  const arr = route.arr ? ([route.arr.lng, route.arr.lat] as [number, number]) : null;
+  const push = (a: [number, number] | null, b: [number, number] | null, kind: string) => {
     if (!a || !b) return;
-    for (const seg of splitAtDateline(greatCircle(a, b, 96))) {
+    for (const coordinates of splitAtDateline(greatCircle(a, b))) {
       features.push({
         type: "Feature",
-        geometry: { type: "LineString", coordinates: seg },
+        geometry: { type: "LineString", coordinates },
         properties: { kind },
       });
     }
   };
-  const dep = route.dep ? ([route.dep.lng, route.dep.lat] as [number, number]) : null;
-  const arr = route.arr ? ([route.arr.lng, route.arr.lat] as [number, number]) : null;
   if (current) {
     push(dep, current, "past");
     push(current, arr, "future");
-  } else if (dep && arr) {
+  } else {
     push(dep, arr, "future");
   }
   return { type: "FeatureCollection", features };
 }
 
-function endpointFeatures(route: FlightRoute | null): FeatureCollection {
+function endpointFeatures(route: FlightRoute | null): FeatureCollection<Point> {
   if (!route) return { type: "FeatureCollection", features: [] };
-  const feats: Feature<Point>[] = [];
-  if (route.dep) {
-    feats.push({
+  return {
+    type: "FeatureCollection",
+    features: [route.dep, route.arr].filter(Boolean).map((airport, index) => ({
       type: "Feature",
-      geometry: { type: "Point", coordinates: [route.dep.lng, route.dep.lat] },
-      properties: { kind: "dep", label: route.dep.iata ?? "" },
-    });
-  }
-  if (route.arr) {
-    feats.push({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [route.arr.lng, route.arr.lat] },
-      properties: { kind: "arr", label: route.arr.iata ?? "" },
-    });
-  }
-  return { type: "FeatureCollection", features: feats };
+      geometry: { type: "Point", coordinates: [airport!.lng, airport!.lat] },
+      properties: {
+        label: airport!.iata || airport!.icao || (index === 0 ? "DEP" : "ARR"),
+        kind: index === 0 ? "Departure" : "Arrival",
+        name: airport!.name || airport!.city || "",
+      },
+    })),
+  };
 }
 
-interface Props {
-  aircraft: Aircraft[];
-  mapStyle: "dark" | "light";
-  markerSize: number;
-  selectedIcao: string | null;
-  onSelect: (icao24: string) => void;
-  onViewportChange: (bbox: [number, number, number, number], center: { lng: number; lat: number }, zoom: number) => void;
-  focusIcao: string | null; // when set, fly to this aircraft
-  route: FlightRoute | null;
+function trailFeature(points: [number, number][]): FeatureCollection<LineString> {
+  return {
+    type: "FeatureCollection",
+    features:
+      points.length > 1
+        ? [
+            {
+              type: "Feature",
+              geometry: { type: "LineString", coordinates: points },
+              properties: {},
+            },
+          ]
+        : [],
+  };
 }
 
+function addImages(map: MLMap) {
+  const images = {
+    "plane-cruise": "#ffcb32",
+    "plane-climb": "#36d399",
+    "plane-descend": "#38bdf8",
+    "plane-ground": "#f97316",
+    "plane-selected": "#ffffff",
+  };
+  Object.entries(images).forEach(([name, color]) => {
+    if (!map.hasImage(name)) map.addImage(name, makePlaneImage(color), { pixelRatio: 2 });
+  });
+}
 
-const SRC = "aircraft-src";
-const LAYER = "aircraft-layer";
-const ROUTE_SRC = "route-src";
-const ROUTE_LAYER_GLOW = "route-layer-glow";
-const ROUTE_LAYER_PAST = "route-layer-past";
-const ROUTE_LAYER_FUTURE = "route-layer-future";
-const ENDPOINT_SRC = "route-endpoints-src";
-const ENDPOINT_LAYER = "route-endpoints-layer";
-const ENDPOINT_LABEL_LAYER = "route-endpoints-label";
+function addSourcesAndLayers(map: MLMap, markerSize: number) {
+  if (!map.getSource(AIRPORT_SRC))
+    map.addSource(AIRPORT_SRC, { type: "geojson", data: airportFeatures() });
+  if (!map.getSource(TRAIL_SRC))
+    map.addSource(TRAIL_SRC, { type: "geojson", data: trailFeature([]) });
+  if (!map.getSource(ROUTE_SRC))
+    map.addSource(ROUTE_SRC, { type: "geojson", data: routeToFeatures(null, null) });
+  if (!map.getSource(ENDPOINT_SRC))
+    map.addSource(ENDPOINT_SRC, { type: "geojson", data: endpointFeatures(null) });
+  if (!map.getSource(SRC)) map.addSource(SRC, { type: "geojson", data: aircraftToFeatures([]) });
 
-
-
-
-function addRouteLayers(map: MLMap) {
-  if (!map.getSource(ROUTE_SRC)) {
-    map.addSource(ROUTE_SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-  }
-  if (!map.getSource(ENDPOINT_SRC)) {
-    map.addSource(ENDPOINT_SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-  }
-  // Insert route layers BENEATH aircraft so planes stay on top.
-  const before = map.getLayer(LAYER) ? LAYER : undefined;
-  if (!map.getLayer(ROUTE_LAYER_GLOW)) {
-    map.addLayer(
-      {
-        id: ROUTE_LAYER_GLOW,
-        type: "line",
-        source: ROUTE_SRC,
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "#a855f7",
-          "line-width": 14,
-          "line-opacity": 0.25,
-          "line-blur": 8,
-        },
+  if (!map.getLayer(AIRPORT_LAYER)) {
+    map.addLayer({
+      id: AIRPORT_LAYER,
+      type: "circle",
+      source: AIRPORT_SRC,
+      minzoom: 2.4,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 2.5, 7, 5, 11, 8],
+        "circle-color": "#8df4ff",
+        "circle-opacity": 0.72,
+        "circle-stroke-color": "rgba(255,255,255,.72)",
+        "circle-stroke-width": 1,
       },
-      before,
-    );
+    });
   }
-  if (!map.getLayer(ROUTE_LAYER_PAST)) {
-    map.addLayer(
-      {
-        id: ROUTE_LAYER_PAST,
-        type: "line",
-        source: ROUTE_SRC,
-        filter: ["==", ["get", "kind"], "past"],
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#a855f7", "line-width": 4, "line-opacity": 1 },
+  if (!map.getLayer(AIRPORT_LABEL)) {
+    map.addLayer({
+      id: AIRPORT_LABEL,
+      type: "symbol",
+      source: AIRPORT_SRC,
+      minzoom: 4.2,
+      layout: {
+        "text-field": ["get", "code"],
+        "text-size": 11,
+        "text-offset": [0, 1.25],
+        "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
       },
-      before,
-    );
+      paint: {
+        "text-color": "#83e9ff",
+        "text-halo-color": "rgba(5,9,15,.86)",
+        "text-halo-width": 1.2,
+      },
+    });
   }
-  if (!map.getLayer(ROUTE_LAYER_FUTURE)) {
-    map.addLayer(
-      {
-        id: ROUTE_LAYER_FUTURE,
-        type: "line",
-        source: ROUTE_SRC,
-        filter: ["==", ["get", "kind"], "future"],
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "#a855f7",
-          "line-width": 3,
-          "line-opacity": 0.75,
-          "line-dasharray": [3, 3],
-        },
+  if (!map.getLayer(ROUTE_GLOW)) {
+    map.addLayer({
+      id: ROUTE_GLOW,
+      type: "line",
+      source: ROUTE_SRC,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#facc15", "line-width": 10, "line-opacity": 0.22, "line-blur": 8 },
+    });
+  }
+  if (!map.getLayer(ROUTE_PAST)) {
+    map.addLayer({
+      id: ROUTE_PAST,
+      type: "line",
+      source: ROUTE_SRC,
+      filter: ["==", ["get", "kind"], "past"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#facc15", "line-width": 3.5, "line-opacity": 0.95 },
+    });
+  }
+  if (!map.getLayer(ROUTE_FUTURE)) {
+    map.addLayer({
+      id: ROUTE_FUTURE,
+      type: "line",
+      source: ROUTE_SRC,
+      filter: ["==", ["get", "kind"], "future"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 2.4,
+        "line-opacity": 0.75,
+        "line-dasharray": [2, 2],
       },
-      before,
-    );
+    });
+  }
+  if (!map.getLayer(TRAIL_LAYER)) {
+    map.addLayer({
+      id: TRAIL_LAYER,
+      type: "line",
+      source: TRAIL_SRC,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#facc15", "line-width": 2, "line-opacity": 0.75 },
+    });
   }
   if (!map.getLayer(ENDPOINT_LAYER)) {
-    map.addLayer(
-      {
-        id: ENDPOINT_LAYER,
-        type: "circle",
-        source: ENDPOINT_SRC,
-        paint: {
-          "circle-radius": 8,
-          "circle-color": "#ffffff",
-          "circle-stroke-color": "#a855f7",
-          "circle-stroke-width": 3,
-        },
-      },
-      before,
-    );
-  }
-  if (!map.getLayer(ENDPOINT_LABEL_LAYER)) {
     map.addLayer({
-      id: ENDPOINT_LABEL_LAYER,
+      id: ENDPOINT_LAYER,
+      type: "circle",
+      source: ENDPOINT_SRC,
+      paint: {
+        "circle-radius": 7,
+        "circle-color": "#0b1220",
+        "circle-stroke-color": "#facc15",
+        "circle-stroke-width": 2,
+      },
+    });
+  }
+  if (!map.getLayer(ENDPOINT_LABEL)) {
+    map.addLayer({
+      id: ENDPOINT_LABEL,
       type: "symbol",
       source: ENDPOINT_SRC,
       layout: {
         "text-field": ["get", "label"],
-        "text-size": 14,
-        "text-offset": [0, 1.8],
-        "text-anchor": "top",
-        "text-allow-overlap": true,
+        "text-size": 12,
+        "text-offset": [0, 1.6],
         "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
       },
       paint: {
-        "text-color": "#a855f7",
-        "text-halo-color": "rgba(255,255,255,0.95)",
-        "text-halo-width": 2,
+        "text-color": "#facc15",
+        "text-halo-color": "rgba(5,9,15,.92)",
+        "text-halo-width": 1.5,
+      },
+    });
+  }
+  if (!map.getLayer(HALO_LAYER)) {
+    map.addLayer({
+      id: HALO_LAYER,
+      type: "circle",
+      source: SRC,
+      paint: {
+        "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 22, 0],
+        "circle-color": "#facc15",
+        "circle-opacity": 0.2,
+        "circle-blur": 0.4,
+      },
+    });
+  }
+  if (!map.getLayer(LAYER)) {
+    map.addLayer({
+      id: LAYER,
+      type: "symbol",
+      source: SRC,
+      layout: {
+        "icon-image": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          "plane-selected",
+          ["get", "onGround"],
+          "plane-ground",
+          ["<", ["get", "verticalRate"], -1],
+          "plane-descend",
+          [">", ["get", "verticalRate"], 1],
+          "plane-climb",
+          "plane-cruise",
+        ],
+        "icon-rotate": ["get", "heading"],
+        "icon-rotation-alignment": "map",
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          2,
+          0.22 * markerSize,
+          6,
+          0.36 * markerSize,
+          10,
+          0.55 * markerSize,
+          14,
+          0.76 * markerSize,
+        ],
+      },
+    });
+  }
+  if (!map.getLayer(LABEL_LAYER)) {
+    map.addLayer({
+      id: LABEL_LAYER,
+      type: "symbol",
+      source: SRC,
+      minzoom: 6,
+      layout: {
+        "text-field": ["get", "callsign"],
+        "text-size": 11,
+        "text-offset": [1.8, 0],
+        "text-anchor": "left",
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-allow-overlap": false,
+      },
+      paint: {
+        "text-color": "#f8fafc",
+        "text-halo-color": "rgba(0,0,0,.78)",
+        "text-halo-width": 1.25,
       },
     });
   }
@@ -352,28 +493,76 @@ export default function FlightMap({
   onViewportChange,
   focusIcao,
   route,
+  animations = true,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const readyRef = useRef(false);
+  const aircraftRef = useRef(aircraft);
+  const markerSizeRef = useRef(markerSize);
+  const onSelectRef = useRef(onSelect);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const routeRef = useRef(route);
+  const routeCurrentRef = useRef<[number, number] | null>(null);
+  const initialMapStyleRef = useRef(mapStyle);
+  const previousFeatureRef = useRef<FeatureCollection<Point>>(aircraftToFeatures([]));
+  const frameRef = useRef<number | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  const trailRef = useRef<Map<string, [number, number][]>>(new Map());
 
+  const routeCurrent = useMemo<[number, number] | null>(() => {
+    const selected = selectedIcao ? aircraft.find((a) => a.icao24 === selectedIcao) : null;
+    return selected?.longitude !== null && selected?.latitude !== null && selected
+      ? [selected.longitude, selected.latitude]
+      : null;
+  }, [aircraft, selectedIcao]);
 
-  // Init map once.
+  useEffect(() => {
+    aircraftRef.current = aircraft;
+  }, [aircraft]);
+
+  useEffect(() => {
+    markerSizeRef.current = markerSize;
+  }, [markerSize]);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  useEffect(() => {
+    onViewportChangeRef.current = onViewportChange;
+  }, [onViewportChange]);
+
+  useEffect(() => {
+    routeRef.current = route;
+    routeCurrentRef.current = routeCurrent;
+  }, [route, routeCurrent]);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: rasterStyle(mapStyle),
-      center: [10, 30],
-      zoom: 2.2,
+      style: rasterStyle(initialMapStyleRef.current),
+      center: [79.9, 7.2],
+      zoom: 4.5,
       attributionControl: false,
       dragRotate: false,
       pitchWithRotate: false,
+      maxPitch: 0,
     });
     mapRef.current = map;
+    popupRef.current = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 16,
+      className: "aeroflow-popup",
+    });
 
-    map.addControl(new NavigationControl({ showCompass: true, visualizePitch: false }), "top-right");
+    map.addControl(
+      new NavigationControl({ showCompass: true, visualizePitch: false }),
+      "top-right",
+    );
     map.addControl(new FullscreenControl(), "top-right");
     map.addControl(
       new GeolocateControl({
@@ -385,257 +574,170 @@ export default function FlightMap({
     );
     map.addControl(new ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-left");
 
-    popupRef.current = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false,
-      offset: 14,
-      className: "aeroflow-popup",
-    });
-
-    // Custom style for the popup to make it look like the requested label
-    const style = document.createElement("style");
-    style.innerHTML = `
-      .aeroflow-popup {
-        background: white !important;
-        color: black !important;
-        border-radius: 4px !important;
-        padding: 2px 6px !important;
-        font-family: Inter, sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 12px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-      }
-      .maplibregl-popup-tip {
-        border-top-color: white !important;
-      }
-    `;
-    document.head.appendChild(style);
+    const publish = () => {
+      const b = map.getBounds();
+      onViewportChangeRef.current(
+        [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()],
+        { lng: map.getCenter().lng, lat: map.getCenter().lat },
+        map.getZoom(),
+      );
+    };
 
     const setup = () => {
-      // Register plane icons in all status colors.
-      for (const [name, color] of Object.entries(ICONS)) {
-        if (map.hasImage(name)) continue;
-        map.addImage(name, makePlaneImage(color, 44, mapStyle === "light"), { pixelRatio: 2 });
-      }
-
-      if (!map.getSource(SRC)) {
-        map.addSource(SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      }
-      if (!map.getLayer(LAYER)) {
-        map.addLayer({
-          id: LAYER,
-          type: "symbol",
-          source: SRC,
-          layout: {
-            "icon-image": [
-              "case",
-              ["get", "onGround"],
-              "plane-warning",
-              ["<", ["get", "verticalRate"], -1],
-              "plane-accent",
-              [">", ["get", "verticalRate"], 1],
-              "plane-success",
-              "plane-primary",
-            ],
-            "icon-rotate": ["get", "heading"],
-            "icon-allow-overlap": true,
-            "icon-ignore-placement": true,
-            "icon-rotation-alignment": "map",
-            "icon-size": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              2, 0.32 * markerSize,
-              6, 0.46 * markerSize,
-              10, 0.72 * markerSize,
-              14, 0.98 * markerSize,
-            ],
-
-          },
-        });
-      }
-      addRouteLayers(map);
+      addImages(map);
+      addSourcesAndLayers(map, markerSizeRef.current);
       readyRef.current = true;
-
-
-      // Interactions.
-      map.on("mouseenter", LAYER, (e) => {
-        map.getCanvas().style.cursor = "pointer";
-        const f = e.features?.[0];
-        if (!f || f.geometry.type !== "Point") return;
-        const [lng, lat] = (f.geometry as Point).coordinates as [number, number];
-        const cs = (f.properties?.callsign as string) || (f.properties?.icao24 as string).toUpperCase();
-        popupRef.current
-          ?.setLngLat([lng, lat])
-          .setHTML(cs)
-          .addTo(map);
-      });
-      map.on("mouseleave", LAYER, () => {
-        map.getCanvas().style.cursor = "";
-        popupRef.current?.remove();
-      });
-      map.on("click", LAYER, (e) => {
-        const f = e.features?.[0];
-        if (!f) return;
-        onSelect(f.properties?.icao24 as string);
-      });
-
-      // Publish viewport.
-      const publish = () => {
-        const b = map.getBounds();
-        onViewportChange(
-          [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()],
-          { lng: map.getCenter().lng, lat: map.getCenter().lat },
-          map.getZoom(),
-        );
-      };
-      map.on("moveend", publish);
+      (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(
+        aircraftToFeatures(aircraftRef.current),
+      );
       publish();
-
-      // If aircraft already available, render.
-      if (aircraft.length) {
-        const src = map.getSource(SRC) as maplibregl.GeoJSONSource;
-        src.setData(aircraftToFeatures(aircraft));
-      }
     };
 
     map.on("load", setup);
+    map.on("moveend", publish);
+    map.on("mouseenter", LAYER, (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      const feature = e.features?.[0];
+      if (!feature || feature.geometry.type !== "Point") return;
+      const [lng, lat] = (feature.geometry as Point).coordinates as [number, number];
+      popupRef.current
+        ?.setLngLat([lng, lat])
+        .setHTML(
+          `<strong>${feature.properties?.callsign}</strong><span>${feature.properties?.country}</span>`,
+        )
+        .addTo(map);
+    });
+    map.on("mouseleave", LAYER, () => {
+      map.getCanvas().style.cursor = "";
+      popupRef.current?.remove();
+    });
+    map.on("click", LAYER, (e) => {
+      const icao24 = e.features?.[0]?.properties?.icao24 as string | undefined;
+      if (icao24) onSelectRef.current(icao24);
+    });
 
     return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
       map.remove();
       mapRef.current = null;
       readyRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update data on aircraft change.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    const src = map.getSource(SRC) as maplibregl.GeoJSONSource | undefined;
-    if (src) src.setData(aircraftToFeatures(aircraft));
-  }, [aircraft]);
+    const next = aircraftToFeatures(aircraft);
+    const src = map.getSource(SRC) as maplibregl.GeoJSONSource;
 
-  // Update route data when selected aircraft changes.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current) return;
-    if (!map.getSource(ROUTE_SRC)) return;
+    for (const feature of next.features) {
+      const id = String(feature.id);
+      const coords = feature.geometry.coordinates as [number, number];
+      const trail = trailRef.current.get(id) ?? [];
+      const last = trail[trail.length - 1];
+      if (
+        !last ||
+        Math.abs(last[0] - coords[0]) > 0.0001 ||
+        Math.abs(last[1] - coords[1]) > 0.0001
+      ) {
+        trailRef.current.set(id, [...trail.slice(-18), coords]);
+      }
+    }
 
-    const routeSrc = map.getSource(ROUTE_SRC) as maplibregl.GeoJSONSource;
-    const currentPlane = aircraft.find((a) => a.icao24 === selectedIcao);
-    const currentPos = currentPlane ? [currentPlane.longitude!, currentPlane.latitude!] : null;
-    const features = routeToFeatures(route, currentPos);
-    routeSrc.setData(features);
-  }, [selectedIcao, route, aircraft]);
+    if (!animations) {
+      src.setData(next);
+      previousFeatureRef.current = next;
+      return;
+    }
 
-  // Style switch (dark/light).
+    const previousById = new Map(
+      previousFeatureRef.current.features.map((feature) => [feature.id, feature]),
+    );
+    const started = performance.now();
+    const duration = 1450;
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - started) / duration);
+      const eased = 1 - (1 - t) ** 3;
+      const features = next.features.map((feature) => {
+        const previous = previousById.get(feature.id);
+        if (!previous) return feature;
+        const a = previous.geometry.coordinates as [number, number];
+        const b = feature.geometry.coordinates as [number, number];
+        if (Math.abs(a[0] - b[0]) > 180) return feature;
+        return {
+          ...feature,
+          geometry: {
+            ...feature.geometry,
+            coordinates: [a[0] + (b[0] - a[0]) * eased, a[1] + (b[1] - a[1]) * eased],
+          },
+        };
+      });
+      src.setData({ type: "FeatureCollection", features });
+      if (t < 1) frameRef.current = requestAnimationFrame(tick);
+    };
+    frameRef.current = requestAnimationFrame(tick);
+    previousFeatureRef.current = next;
+  }, [aircraft, animations]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     readyRef.current = false;
     map.setStyle(rasterStyle(mapStyle));
     map.once("style.load", () => {
-      // Re-add icons & layer after style swap.
-      for (const [name, color] of Object.entries(ICONS)) {
-        if (!map.hasImage(name)) map.addImage(name, makePlaneImage(color), { pixelRatio: 2 });
-      }
-      if (!map.getSource(SRC)) {
-        map.addSource(SRC, { type: "geojson", data: aircraftToFeatures(aircraft) });
-      }
-      if (!map.getLayer(LAYER)) {
-        map.addLayer({
-          id: LAYER,
-          type: "symbol",
-          source: SRC,
-          layout: {
-            "icon-image": [
-              "case",
-              ["get", "onGround"], "plane-warning",
-              ["<", ["get", "verticalRate"], -1], "plane-accent",
-              [">", ["get", "verticalRate"], 1], "plane-success",
-              "plane-primary",
-            ],
-            "icon-rotate": ["get", "heading"],
-            "icon-allow-overlap": true,
-            "icon-ignore-placement": true,
-            "icon-rotation-alignment": "map",
-            "icon-size": [
-              "interpolate", ["linear"], ["zoom"],
-              2, 0.32 * markerSize,
-              6, 0.46 * markerSize,
-              10, 0.72 * markerSize,
-              14, 0.98 * markerSize,
-            ],
-          },
-        });
-      }
-      addRouteLayers(map);
+      addImages(map);
+      addSourcesAndLayers(map, markerSizeRef.current);
       readyRef.current = true;
-
+      previousFeatureRef.current = aircraftToFeatures(aircraftRef.current);
+      (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(previousFeatureRef.current);
+      (map.getSource(ROUTE_SRC) as maplibregl.GeoJSONSource).setData(
+        routeToFeatures(routeRef.current, routeCurrentRef.current),
+      );
+      (map.getSource(ENDPOINT_SRC) as maplibregl.GeoJSONSource).setData(
+        endpointFeatures(routeRef.current),
+      );
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapStyle]);
 
-  // Fly-to when a focus target is set.
   useEffect(() => {
-    if (!focusIcao) return;
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !readyRef.current) return;
+    if (selectedRef.current) {
+      map.setFeatureState({ source: SRC, id: selectedRef.current }, { selected: false });
+    }
+    selectedRef.current = selectedIcao;
+    if (selectedIcao) {
+      map.setFeatureState({ source: SRC, id: selectedIcao }, { selected: true });
+    }
+  }, [selectedIcao, aircraft]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    (map.getSource(ROUTE_SRC) as maplibregl.GeoJSONSource | undefined)?.setData(
+      routeToFeatures(selectedIcao ? route : null, routeCurrent),
+    );
+    (map.getSource(ENDPOINT_SRC) as maplibregl.GeoJSONSource | undefined)?.setData(
+      endpointFeatures(selectedIcao ? route : null),
+    );
+    const trail = selectedIcao ? (trailRef.current.get(selectedIcao) ?? []) : [];
+    (map.getSource(TRAIL_SRC) as maplibregl.GeoJSONSource | undefined)?.setData(
+      trailFeature(trail),
+    );
+  }, [route, selectedIcao, routeCurrent]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusIcao) return;
     const target = aircraft.find((a) => a.icao24 === focusIcao);
     if (!target || target.longitude === null || target.latitude === null) return;
     map.flyTo({
       center: [target.longitude, target.latitude],
-      zoom: Math.max(map.getZoom(), 6),
-      speed: 1.2,
-      essential: true,
+      zoom: Math.max(map.getZoom(), 7),
+      speed: 1.35,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusIcao]);
-
-  // Selection highlight — grow the selected marker.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current || !map.getLayer(LAYER)) return;
-    if (selectedIcao) {
-      map.setLayoutProperty(LAYER, "icon-size", [
-        "interpolate", ["linear"], ["zoom"],
-        2,
-        ["case", ["==", ["get", "icao24"], selectedIcao], 0.72 * markerSize, 0.32 * markerSize],
-        10,
-        ["case", ["==", ["get", "icao24"], selectedIcao], 1.24 * markerSize, 0.72 * markerSize],
-        14,
-        ["case", ["==", ["get", "icao24"], selectedIcao], 1.5 * markerSize, 0.98 * markerSize],
-      ]);
-    } else {
-      map.setLayoutProperty(LAYER, "icon-size", [
-        "interpolate", ["linear"], ["zoom"],
-        2, 0.32 * markerSize,
-        6, 0.46 * markerSize,
-        10, 0.72 * markerSize,
-        14, 0.98 * markerSize,
-      ]);
-    }
-  }, [selectedIcao, markerSize]);
-
-  // Update route source when route or selected aircraft position changes.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !readyRef.current) return;
-    const selected = selectedIcao
-      ? aircraft.find((a) => a.icao24 === selectedIcao)
-      : null;
-    const current: [number, number] | null =
-      selected && selected.longitude !== null && selected.latitude !== null
-        ? [selected.longitude, selected.latitude]
-        : null;
-    const routeSrc = map.getSource(ROUTE_SRC) as maplibregl.GeoJSONSource | undefined;
-    const endSrc = map.getSource(ENDPOINT_SRC) as maplibregl.GeoJSONSource | undefined;
-    if (routeSrc) routeSrc.setData(routeToFeatures(selectedIcao ? route : null, current));
-    if (endSrc) endSrc.setData(endpointFeatures(selectedIcao ? route : null));
-  }, [route, selectedIcao, aircraft]);
-
+  }, [focusIcao, aircraft]);
 
   return (
     <div className="absolute inset-0">

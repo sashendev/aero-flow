@@ -60,7 +60,7 @@
 }
 
 :root {
-  --radius: 0.875rem;
+  --radius: 0.5rem;
 
   /* Light — #F8FAFC background */
   --background: oklch(0.984 0.003 247);
@@ -109,15 +109,26 @@
   --sidebar-border: oklch(0.92 0.012 250);
   --sidebar-ring: oklch(0.554 0.212 262);
 
-  --gradient-hero: radial-gradient(ellipse at 20% 0%,
+  --gradient-hero:
+    radial-gradient(
+      ellipse at 20% 0%,
       color-mix(in oklab, var(--primary) 22%, transparent),
-      transparent 55%),
-    radial-gradient(ellipse at 85% 15%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 85% 15%,
       color-mix(in oklab, var(--accent) 20%, transparent),
-      transparent 60%),
-    linear-gradient(180deg, var(--background) 0%, color-mix(in oklab, var(--background) 90%, var(--primary) 4%) 100%);
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      var(--background) 0%,
+      color-mix(in oklab, var(--background) 90%, var(--primary) 4%) 100%
+    );
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  --shadow-elegant: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -8px color-mix(in oklab, var(--primary) 22%, transparent);
+  --shadow-elegant:
+    0 1px 2px oklch(0 0 0 / 0.04),
+    0 8px 24px -8px color-mix(in oklab, var(--primary) 22%, transparent);
   --shadow-glow: 0 0 40px -8px color-mix(in oklab, var(--primary) 45%, transparent);
   --shadow-panel: 0 24px 48px -24px oklch(0 0 0 / 0.25), 0 2px 6px oklch(0 0 0 / 0.04);
   --glass-bg: color-mix(in oklab, var(--card) 72%, transparent);
@@ -167,14 +178,21 @@
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.62 0.212 262);
 
-  --gradient-hero: radial-gradient(ellipse at 20% 0%,
+  --gradient-hero:
+    radial-gradient(
+      ellipse at 20% 0%,
       color-mix(in oklab, var(--primary) 28%, transparent),
-      transparent 55%),
-    radial-gradient(ellipse at 80% 20%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 80% 20%,
       color-mix(in oklab, var(--accent) 22%, transparent),
-      transparent 60%),
+      transparent 60%
+    ),
     linear-gradient(180deg, var(--background) 0%, oklch(0.1 0.008 260) 100%);
-  --shadow-elegant: 0 1px 2px oklch(0 0 0 / 0.4), 0 12px 32px -8px color-mix(in oklab, var(--primary) 35%, transparent);
+  --shadow-elegant:
+    0 1px 2px oklch(0 0 0 / 0.4),
+    0 12px 32px -8px color-mix(in oklab, var(--primary) 35%, transparent);
   --shadow-glow: 0 0 48px -8px color-mix(in oklab, var(--primary) 55%, transparent);
   --shadow-panel: 0 24px 48px -24px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.3);
   --glass-bg: color-mix(in oklab, var(--card) 68%, transparent);
@@ -206,7 +224,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 }
 
@@ -214,8 +232,51 @@
   background: var(--glass-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid var(--glass-border);
+  border: 1px solid color-mix(in oklab, var(--glass-border) 70%, transparent);
   box-shadow: var(--shadow-panel);
+}
+
+@utility radar-panel {
+  background: color-mix(in oklab, var(--card) 66%, transparent);
+  backdrop-filter: saturate(170%) blur(18px);
+  -webkit-backdrop-filter: saturate(170%) blur(18px);
+  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  box-shadow:
+    0 18px 46px -28px oklch(0 0 0 / 0.62),
+    0 1px 0 oklch(1 0 0 / 0.08) inset;
+}
+
+@utility radar-button {
+  background: color-mix(in oklab, var(--card) 60%, transparent);
+  backdrop-filter: saturate(160%) blur(16px);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
+  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  box-shadow: 0 14px 32px -24px oklch(0 0 0 / 0.6);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+@utility radar-button-hover {
+  background: color-mix(in oklab, var(--card) 78%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 18%, transparent);
+}
+
+@utility radar-tile {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+  background: color-mix(in oklab, var(--foreground) 5%, transparent);
+  padding: 0.75rem;
+}
+
+@utility radar-section {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+  padding: 0.875rem;
 }
 
 @utility gradient-text {
@@ -260,7 +321,7 @@
   color: var(--color-foreground) !important;
 }
 
-.maplibregl-ctrl-group button+button {
+.maplibregl-ctrl-group button + button {
   border-top: 1px solid var(--glass-border) !important;
 }
 
@@ -277,14 +338,27 @@
 }
 
 .maplibregl-popup-content {
-  background: var(--glass-bg) !important;
+  background: color-mix(in oklab, var(--card) 78%, transparent) !important;
   color: var(--color-foreground) !important;
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  border-radius: calc(var(--radius) - 2px) !important;
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+  border-radius: var(--radius) !important;
   padding: 8px 12px !important;
   box-shadow: var(--shadow-elegant);
   font-family: var(--font-sans);
+}
+
+.aeroflow-popup strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.aeroflow-popup span {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
 }
 
 .maplibregl-popup-tip {

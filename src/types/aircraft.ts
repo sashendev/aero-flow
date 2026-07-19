@@ -1,27 +1,24 @@
-// Shared aircraft/flight types (isomorphic — safe on client & server).
-
 export type AircraftStateVector = [
-  string,           // 0  icao24
-  string | null,    // 1  callsign
-  string,           // 2  origin_country
-  number | null,    // 3  time_position
-  number,           // 4  last_contact
-  number | null,    // 5  longitude
-  number | null,    // 6  latitude
-  number | null,    // 7  baro_altitude (m)
-  boolean,          // 8  on_ground
-  number | null,    // 9  velocity (m/s)
-  number | null,    // 10 true_track (deg)
-  number | null,    // 11 vertical_rate (m/s)
-  number[] | null,  // 12 sensors
-  number | null,    // 13 geo_altitude (m)
-  string | null,    // 14 squawk
-  boolean,          // 15 spi
-  number,           // 16 position_source
+  string,
+  string | null,
+  string,
+  number | null,
+  number,
+  number | null,
+  number | null,
+  number | null,
+  boolean,
+  number | null,
+  number | null,
+  number | null,
+  number[] | null,
+  number | null,
+  string | null,
+  boolean,
+  number,
 ];
 
 export interface Aircraft {
-  [x: string]: number;
   icao24: string;
   callsign: string | null;
   originCountry: string;
