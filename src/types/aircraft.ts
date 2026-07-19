@@ -21,6 +21,7 @@ export type AircraftStateVector = [
 ];
 
 export interface Aircraft {
+  [x: string]: number;
   icao24: string;
   callsign: string | null;
   originCountry: string;

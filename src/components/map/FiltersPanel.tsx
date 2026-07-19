@@ -47,23 +47,23 @@ export function FiltersPanel({ filters, setFilters, aircraft }: Props) {
         <Button
           variant="outline"
           size="icon"
-          className="glass-panel rounded-xl border-glass-border h-10 w-10 relative"
+          className="bg-surface-container/80 backdrop-blur-md border border-outline-variant/50 rounded shadow-lg h-10 w-10 relative text-on-surface-variant hover:text-primary hover:bg-surface-variant/50 transition-colors"
           aria-label="Open filters"
         >
           <Filter className="h-4 w-4" />
           {active && (
-            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent shadow-glow" />
+            <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="glass-panel w-80 space-y-5">
-        <div>
-          <h3 className="font-display text-sm font-semibold">Filters</h3>
-          <p className="text-xs text-muted-foreground">Refine what's visible on the map.</p>
+      <PopoverContent align="end" className="bg-surface-container/90 backdrop-blur-xl border border-outline-variant/30 w-80 space-y-5 text-on-surface">
+        <div className="border-b border-outline-variant/30 pb-3 mb-2">
+          <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest text-xs">Filters</h3>
+          <p className="text-xs text-on-surface-variant/70">Refine what's visible on the map.</p>
         </div>
 
         <div className="flex items-center justify-between">
-          <Label htmlFor="airborne">Airborne</Label>
+          <Label htmlFor="airborne" className="text-on-surface text-xs font-medium">Airborne</Label>
           <Switch
             id="airborne"
             checked={filters.showAirborne}
@@ -71,7 +71,7 @@ export function FiltersPanel({ filters, setFilters, aircraft }: Props) {
           />
         </div>
         <div className="flex items-center justify-between">
-          <Label htmlFor="ground">On the ground</Label>
+          <Label htmlFor="ground" className="text-on-surface text-xs font-medium">On the ground</Label>
           <Switch
             id="ground"
             checked={filters.showGrounded}
@@ -81,8 +81,8 @@ export function FiltersPanel({ filters, setFilters, aircraft }: Props) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Max altitude</Label>
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <Label className="text-on-surface text-xs font-medium">Max altitude</Label>
+            <span className="text-xs text-on-surface-variant tabular-nums">
               ≤ {Math.round(filters.maxAltitudeM).toLocaleString()} m
             </span>
           </div>
@@ -96,7 +96,7 @@ export function FiltersPanel({ filters, setFilters, aircraft }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label>Country of origin</Label>
+          <Label className="text-on-surface text-xs font-medium">Country of origin</Label>
           <Select value={filters.country} onValueChange={(v) => setFilters({ country: v })}>
             <SelectTrigger>
               <SelectValue />

@@ -13,12 +13,12 @@ interface Props {
 
 export function StatusBar({ count, lastUpdate, refreshMs, status, center, zoom }: Props) {
   const color =
-    status === "ok" ? "text-success" : status === "loading" ? "text-accent" : "text-destructive";
+    status === "ok" ? "text-primary" : status === "loading" ? "text-secondary" : "text-error";
   const label = status === "ok" ? "Connected" : status === "loading" ? "Syncing" : "Degraded";
 
   return (
     <div
-      className="glass-panel flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-full px-4 py-1.5 text-xs text-muted-foreground"
+      className="fixed bottom-6 left-6 z-40 bg-surface-container/80 backdrop-blur-md border border-outline-variant/50 rounded-full px-4 py-1.5 text-xs text-on-surface-variant flex items-center gap-x-5 gap-y-1.5 shadow-lg"
       role="status"
     >
       <span className="flex items-center gap-1.5">

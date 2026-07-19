@@ -161,18 +161,6 @@ function MapPage() {
         </div>
       </motion.header>
 
-      {/* Stats — desktop only */}
-      <motion.div
-        initial={{ opacity: 0, x: -12 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="pointer-events-none absolute left-4 top-24 z-20 hidden lg:block"
-      >
-        <div className="pointer-events-auto">
-          <StatsPanel aircraft={aircraftFiltered} units={settings.units} />
-        </div>
-      </motion.div>
-
       {/* Details panel */}
       <div className="pointer-events-none absolute right-4 top-24 bottom-16 z-20 hidden md:flex items-start justify-end">
         <div className="pointer-events-auto">
@@ -216,14 +204,6 @@ function MapPage() {
             center={center}
             zoom={zoom}
           />
-        </div>
-      </div>
-
-      {/* Mobile stats — floating pill */}
-      <div className="lg:hidden absolute left-3 top-20 z-10 pointer-events-none">
-        <div className="pointer-events-auto glass-panel rounded-full px-3 py-1.5 text-xs">
-          <span className="font-semibold text-foreground">{aircraftFiltered.length.toLocaleString()}</span>{" "}
-          <span className="text-muted-foreground">aircraft</span>
         </div>
       </div>
 

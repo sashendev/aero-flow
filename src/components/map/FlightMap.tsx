@@ -42,21 +42,21 @@ function rasterStyle(variant: "dark" | "light"): StyleSpecification {
 }
 
 // Draw a small plane icon on a canvas so we can register it as a map image.
-function makePlaneImage(color: string, size = 44): ImageData {
+function makePlaneImage(color: string, size = 44, isLight = false): ImageData {
   const c = document.createElement("canvas");
   c.width = size;
   c.height = size;
   const g = c.getContext("2d")!;
   const s = size;
   // Soft shadow disk for readability on tiles.
-  g.fillStyle = "rgba(0,0,0,0.25)";
+  g.fillStyle = isLight ? "rgba(0,0,0,0.1)" : "rgba(0,0,0,0.25)";
   g.beginPath();
   g.arc(s / 2, s / 2, s * 0.38, 0, Math.PI * 2);
   g.fill();
   // Plane silhouette, pointing up (north). MapLibre applies icon-rotate.
   g.translate(s / 2, s / 2);
   g.fillStyle = color;
-  g.strokeStyle = "rgba(255,255,255,0.9)";
+  g.strokeStyle = isLight ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.9)";
   g.lineWidth = 1.4;
   const k = s / 44;
   g.beginPath();
@@ -367,7 +367,7 @@ export default function FlightMap({
       style: rasterStyle(mapStyle),
       center: [10, 30],
       zoom: 2.2,
-      attributionControl: { compact: true },
+      attributionControl: false,
       dragRotate: false,
       pitchWithRotate: false,
     });
@@ -392,11 +392,30 @@ export default function FlightMap({
       className: "aeroflow-popup",
     });
 
+    // Custom style for the popup to make it look like the requested label
+    const style = document.createElement("style");
+    style.innerHTML = `
+      .aeroflow-popup {
+        background: white !important;
+        color: black !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
+        font-family: Inter, sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 12px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+      }
+      .maplibregl-popup-tip {
+        border-top-color: white !important;
+      }
+    `;
+    document.head.appendChild(style);
+
     const setup = () => {
       // Register plane icons in all status colors.
       for (const [name, color] of Object.entries(ICONS)) {
         if (map.hasImage(name)) continue;
-        map.addImage(name, makePlaneImage(color), { pixelRatio: 2 });
+        map.addImage(name, makePlaneImage(color, 44, mapStyle === "light"), { pixelRatio: 2 });
       }
 
       if (!map.getSource(SRC)) {
@@ -448,10 +467,7 @@ export default function FlightMap({
         const cs = (f.properties?.callsign as string) || (f.properties?.icao24 as string).toUpperCase();
         popupRef.current
           ?.setLngLat([lng, lat])
-          .setHTML(
-            `<div style="font-family:var(--font-sans);font-size:12px;font-weight:600">${cs}</div>` +
-              `<div style="font-family:var(--font-sans);font-size:10.5px;opacity:0.75">${f.properties?.country ?? ""}</div>`,
-          )
+          .setHTML(cs)
           .addTo(map);
       });
       map.on("mouseleave", LAYER, () => {
@@ -500,6 +516,19 @@ export default function FlightMap({
     const src = map.getSource(SRC) as maplibregl.GeoJSONSource | undefined;
     if (src) src.setData(aircraftToFeatures(aircraft));
   }, [aircraft]);
+
+  // Update route data when selected aircraft changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (!map.getSource(ROUTE_SRC)) return;
+
+    const routeSrc = map.getSource(ROUTE_SRC) as maplibregl.GeoJSONSource;
+    const currentPlane = aircraft.find((a) => a.icao24 === selectedIcao);
+    const currentPos = currentPlane ? [currentPlane.longitude!, currentPlane.latitude!] : null;
+    const features = routeToFeatures(route, currentPos);
+    routeSrc.setData(features);
+  }, [selectedIcao, route, aircraft]);
 
   // Style switch (dark/light).
   useEffect(() => {

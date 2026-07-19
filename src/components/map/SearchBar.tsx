@@ -34,25 +34,26 @@ export function SearchBar({ aircraft, onSelect }: Props) {
     <div className="relative w-full max-w-md">
       <div
         className={cn(
-          "glass-panel flex items-center gap-2 rounded-xl px-3 py-2 transition",
-          focused && "shadow-elegant ring-2 ring-primary/30",
+          "flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all",
+          "bg-surface-container border border-outline-variant/50",
+          focused && "border-secondary ring-1 ring-secondary/50 shadow-none",
         )}
       >
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Search className="h-5 w-5 text-on-surface-variant shrink-0" />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
-          placeholder="Search callsign, ICAO24, country…"
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-8 px-0 text-sm"
+          placeholder="Search Callsign, Airline, Fix..."
+          className="border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-8 px-0 text-sm text-on-surface placeholder:text-on-surface-variant/70"
           aria-label="Search flights"
         />
         {q && (
           <button
             onClick={() => setQ("")}
             aria-label="Clear search"
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition"
+            className="rounded-md p-1 text-on-surface-variant hover:text-on-surface transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>

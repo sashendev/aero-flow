@@ -41,13 +41,13 @@ function Stat({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="glass-panel rounded-xl p-3 min-w-[130px]"
+      className="bg-surface-container/80 backdrop-blur-md border border-outline-variant/50 rounded-xl p-3 min-w-[130px] shadow-lg"
     >
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-on-surface-variant">
         <Icon className={`h-3.5 w-3.5 ${accent}`} />
         {label}
       </div>
-      <div className="mt-1.5 font-display text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-1.5 font-data-lg text-lg font-semibold tabular-nums text-on-surface">{value}</div>
     </motion.div>
   );
 }

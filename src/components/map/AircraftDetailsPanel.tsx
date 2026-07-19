@@ -98,65 +98,62 @@ export function AircraftDetailsPanel({ aircraft, units, onClose }: Props) {
               <X className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 text-primary-foreground backdrop-blur">
-                <Plane
-                  className="h-5 w-5"
-                  style={{
-                    transform: `rotate(${(aircraft.heading ?? 0) - 45}deg)`,
-                    transition: "transform 0.4s ease-out",
-                  }}
-                />
-              </div>
-              <div className="min-w-0">
-                <div className="font-display text-xl font-semibold text-primary-foreground truncate">
-                  {aircraft.callsign || aircraft.icao24.toUpperCase()}
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-data-lg text-[28px] text-on-surface tracking-tight leading-none">
+                    {aircraft.callsign || aircraft.icao24.toUpperCase()}
+                  </h2>
+                  <StatusBadge aircraft={aircraft} />
                 </div>
-                <div className="flex items-center gap-2 text-primary-foreground/80 text-xs">
-                  <span aria-hidden>{flagEmoji(aircraft.originCountry)}</span>
-                  <span className="truncate">{aircraft.originCountry}</span>
-                </div>
+                <span className="font-body-md text-[13px] text-on-surface-variant mt-1">
+                  {aircraft.originCountry} · {aircraft.icao24.toUpperCase()}
+                </span>
               </div>
-            </div>
-            <div className="mt-3">
-              <StatusBadge aircraft={aircraft} />
             </div>
           </header>
-
-          <div className="px-5 py-2 max-h-[60vh] overflow-y-auto">
-            <Row icon={Hash} label="ICAO24" value={aircraft.icao24.toUpperCase()} mono />
+          <div className="p-5 space-y-4">
             <Row
-              icon={Radio}
-              label="Callsign"
-              value={aircraft.callsign || "—"}
-              mono={!!aircraft.callsign}
+              icon={Plane}
+              label="Altitude"
+              value={formatAltitude(aircraft.baroAltitude ?? 0, units)}
+              mono
             />
-            <Row icon={Gauge} label="Altitude" value={formatAltitude(aircraft.baroAltitude, units)} />
-            <Row icon={Gauge} label="Geo altitude" value={formatAltitude(aircraft.geoAltitude, units)} />
-            <Row icon={Gauge} label="Ground speed" value={formatSpeed(aircraft.velocity, units)} />
+            <Row
+              icon={Gauge}
+              label="Ground Speed"
+              value={formatSpeed(aircraft.velocity ?? 0, units)}
+              mono
+            />
             <Row
               icon={Navigation}
-              label="Vertical rate"
-              value={formatVerticalRate(aircraft.verticalRate, units)}
+              label="Heading"
+              value={formatHeading(aircraft.trueTrack ?? 0)}
+              mono
             />
-            <Row icon={Navigation} label="Heading" value={formatHeading(aircraft.heading)} />
-            <Row icon={MapPin} label="Latitude" value={formatCoord(aircraft.latitude, "lat")} mono />
-            <Row icon={MapPin} label="Longitude" value={formatCoord(aircraft.longitude, "lng")} mono />
+            <Row
+              icon={Radio}
+              label="Vertical Rate"
+              value={formatVerticalRate(aircraft.verticalRate ?? 0, units)}
+              mono
+            />
+            <Row
+              icon={MapPin}
+              label="Position"
+              value={<>{formatCoord(aircraft.latitude ?? 0, aircraft.longitude ?? 0)}</>}
+              mono
+            />
+            <Row
+              icon={Clock}
+              label="Last Contact"
+              value={formatLastContact(aircraft.lastContact)}
+              mono
+            />
             <Row
               icon={Hash}
               label="Squawk"
-              value={aircraft.squawk || "—"}
-              mono={!!aircraft.squawk}
+              value={aircraft.squawk ?? "—"}
+              mono
             />
-            <Row icon={Clock} label="Last contact" value={formatLastContact(aircraft.lastContact)} />
-            <div className="pt-3 pb-1 text-[11px] text-muted-foreground">
-              Registration & aircraft model are not exposed by the public OpenSky Network feed.
-            </div>
-          </div>
-
-          <div className="p-3 border-t border-border/60 flex justify-end">
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Close
-            </Button>
           </div>
         </motion.aside>
       )}
