@@ -124,7 +124,12 @@ export async function fetchOpenSkyStates({ bbox, icao24 }: FetchArgs): Promise<{
     });
     if (!res.ok) {
       if (hit)
-        return { time: hit.time, aircraft: hit.aircraft, cached: true, error: `AirLabs ${res.status}` };
+        return {
+          time: hit.time,
+          aircraft: hit.aircraft,
+          cached: true,
+          error: `AirLabs ${res.status}`,
+        };
       return {
         time: Math.floor(now / 1000),
         aircraft: [],
@@ -146,9 +151,7 @@ export async function fetchOpenSkyStates({ bbox, icao24 }: FetchArgs): Promise<{
         error: json.error.message ?? "AirLabs error",
       };
     }
-    const aircraft = (json.response ?? [])
-      .map(toAircraft)
-      .filter((a): a is Aircraft => a !== null);
+    const aircraft = (json.response ?? []).map(toAircraft).filter((a): a is Aircraft => a !== null);
     const time = Math.floor(now / 1000);
     const entry: CacheEntry = { time, aircraft, fetchedAt: now };
     cache.set(key, entry);

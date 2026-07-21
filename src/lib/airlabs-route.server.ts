@@ -87,7 +87,10 @@ export async function fetchFlightRoute(icao24: string): Promise<FlightRoute | nu
     const data: FlightRoute = {
       icao24: key,
       callsign:
-        (r.flight_iata as string) || (r.flight_icao as string) || (r.flight_number as string) || null,
+        (r.flight_iata as string) ||
+        (r.flight_icao as string) ||
+        (r.flight_number as string) ||
+        null,
       dep,
       arr,
       progress: typeof r.percent === "number" ? (r.percent as number) / 100 : null,

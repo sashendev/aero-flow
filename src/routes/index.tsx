@@ -217,7 +217,9 @@ function MapPage() {
       {/* Mobile stats — floating pill */}
       <div className="lg:hidden absolute left-3 top-20 z-10 pointer-events-none">
         <div className="pointer-events-auto glass-panel rounded-full px-3 py-1.5 text-xs">
-          <span className="font-semibold text-foreground">{aircraftFiltered.length.toLocaleString()}</span>{" "}
+          <span className="font-semibold text-foreground">
+            {aircraftFiltered.length.toLocaleString()}
+          </span>{" "}
           <span className="text-muted-foreground">aircraft</span>
         </div>
       </div>
@@ -229,12 +231,7 @@ function MapPage() {
             <div className="text-sm text-muted-foreground">
               No aircraft in this area right now. Try zooming out or panning to another region.
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={() => query.refetch()}
-            >
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => query.refetch()}>
               Refresh
             </Button>
           </div>
