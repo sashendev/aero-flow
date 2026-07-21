@@ -15,15 +15,12 @@ export const Route = createFileRoute("/api/flight/$icao24")({
         }
         const { time, aircraft, cached, error } = await fetchOpenSkyStates({ icao24 });
         const one = aircraft[0] ?? null;
-        return new Response(
-          JSON.stringify({ time, aircraft: one, cached, error }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
-            },
+        return new Response(JSON.stringify({ time, aircraft: one, cached, error }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
           },
-        );
+        });
       },
     },
   },

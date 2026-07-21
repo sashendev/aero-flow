@@ -47,7 +47,9 @@ function Stat({
         <Icon className={`h-3.5 w-3.5 ${accent}`} />
         {label}
       </div>
-      <div className="mt-1.5 font-data-lg text-lg font-semibold tabular-nums text-on-surface">{value}</div>
+      <div className="mt-1.5 font-data-lg text-lg font-semibold tabular-nums text-on-surface">
+        {value}
+      </div>
     </motion.div>
   );
 }
@@ -56,13 +58,13 @@ export function StatsPanel({ aircraft, units }: Props) {
   const s = useStats(aircraft);
   return (
     <div className="flex flex-wrap gap-2">
+      <Stat icon={Plane} label="Tracked" value={s.total.toLocaleString()} accent="text-primary" />
       <Stat
         icon={Plane}
-        label="Tracked"
-        value={s.total.toLocaleString()}
-        accent="text-primary"
+        label="Airborne"
+        value={s.airborne.toLocaleString()}
+        accent="text-success"
       />
-      <Stat icon={Plane} label="Airborne" value={s.airborne.toLocaleString()} accent="text-success" />
       <Stat
         icon={TowerControl}
         label="On ground"

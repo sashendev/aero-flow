@@ -14,29 +14,29 @@ The project is designed as a portfolio-quality application while following scala
 
 ### Current Features
 
-* 🗺️ Interactive world map
-* ✈️ Live aircraft tracking
-* 🔍 Flight search
-* 📍 Aircraft details panel
-* 🌙 Dark & Light mode
-* 📱 Responsive design
-* ⚡ Fast performance
-* 🎨 Modern UI/UX
-* 🔄 Auto-refreshing flight data
+- 🗺️ Interactive world map
+- ✈️ Live aircraft tracking
+- 🔍 Flight search
+- 📍 Aircraft details panel
+- 🌙 Dark & Light mode
+- 📱 Responsive design
+- ⚡ Fast performance
+- 🎨 Modern UI/UX
+- 🔄 Auto-refreshing flight data
 
 ### Planned Features
 
-* 🛫 Airport pages
-* 🛩️ Airline pages
-* 📈 Flight history
-* 🎬 Flight replay
-* 🌦️ Weather overlays
-* 🌍 3D globe mode
-* ⭐ Favorite flights
-* 🔔 Flight alerts
-* 📊 Aviation analytics
-* 🤖 AI-powered flight explanations
-* 🛰️ Multiple map layers
+- 🛫 Airport pages
+- 🛩️ Airline pages
+- 📈 Flight history
+- 🎬 Flight replay
+- 🌦️ Weather overlays
+- 🌍 3D globe mode
+- ⭐ Favorite flights
+- 🔔 Flight alerts
+- 📊 Aviation analytics
+- 🤖 AI-powered flight explanations
+- 🛰️ Multiple map layers
 
 ---
 
@@ -44,23 +44,23 @@ The project is designed as a portfolio-quality application while following scala
 
 ### Frontend
 
-* Next.js 15
-* React
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* Framer Motion
-* TanStack Query
-* MapLibre GL JS
-* Lucide Icons
+- Next.js 15
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- TanStack Query
+- MapLibre GL JS
+- Lucide Icons
 
 ### API
 
-* AirLabs API
+- AirLabs API
 
 ### Hosting
 
-* Vercel
+- Vercel
 
 ---
 
@@ -68,8 +68,8 @@ The project is designed as a portfolio-quality application while following scala
 
 ### Prerequisites
 
-* Node.js 20+
-* npm, pnpm, or bun
+- Node.js 20+
+- npm, pnpm, or bun
 
 ### Installation
 
@@ -122,12 +122,12 @@ Data availability depends on the AirLabs API and may be subject to rate limits.
 
 ## 🎯 Project Goals
 
-* Build a modern aviation tracking platform
-* Learn real-time web applications
-* Explore geospatial mapping technologies
-* Practice scalable frontend architecture
-* Demonstrate full-stack development skills
-* Showcase production-ready UI/UX design
+- Build a modern aviation tracking platform
+- Learn real-time web applications
+- Explore geospatial mapping technologies
+- Practice scalable frontend architecture
+- Demonstrate full-stack development skills
+- Showcase production-ready UI/UX design
 
 ---
 
@@ -135,22 +135,22 @@ Data availability depends on the AirLabs API and may be subject to rate limits.
 
 AeroFlow is optimized for:
 
-* Desktop
-* Laptop
-* Tablet
-* Mobile
+- Desktop
+- Laptop
+- Tablet
+- Mobile
 
 ---
 
 ## 🎨 Design Principles
 
-* Clean & minimal
-* Fast & responsive
-* Accessibility-first
-* Mobile-friendly
-* Smooth animations
-* Scalable architecture
-* Modern SaaS-inspired interface
+- Clean & minimal
+- Fast & responsive
+- Accessibility-first
+- Mobile-friendly
+- Smooth animations
+- Scalable architecture
+- Modern SaaS-inspired interface
 
 ---
 
@@ -158,16 +158,15 @@ AeroFlow is optimized for:
 
 AeroFlow is built with performance in mind:
 
-* Viewport-based rendering
-* Lazy loading
-* Optimized API requests
-* Client-side caching
-* Efficient map rendering
-* Code splitting
-* Type-safe development
+- Viewport-based rendering
+- Lazy loading
+- Optimized API requests
+- Client-side caching
+- Efficient map rendering
+- Code splitting
+- Type-safe development
 
 ---
-
 
 ## 📄 License
 
@@ -177,13 +176,13 @@ This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgements
 
-* AirLabs API
-* MapLibre GL JS
-* OpenStreetMap
-* Next.js
-* Tailwind CSS
-* shadcn/ui
-* Vercel
+- AirLabs API
+- MapLibre GL JS
+- OpenStreetMap
+- Next.js
+- Tailwind CSS
+- shadcn/ui
+- Vercel
 
 ---
 
