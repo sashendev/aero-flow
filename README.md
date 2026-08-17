@@ -74,9 +74,9 @@ The project is designed as a portfolio-quality application while following scala
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/aero-flow.git
+git clone https://github.com/sashendev/aero-flow.git
 
-cd aeroflow
+cd aero-flow
 
 npm install
 ```
